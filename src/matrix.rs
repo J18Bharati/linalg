@@ -110,19 +110,11 @@ impl<T: Numeric> Tensor<T, 2> {
             n,
         );
 
-        let v_data = v.as_slice();
-        let mut result = vec![T::zero(); m];
-        for (i, res) in result.iter_mut().enumerate() {
-            let mut sum = T::zero();
-            for (j, &vj) in v_data.iter().enumerate() {
-                sum = sum + self.data[i * n + j] * vj;
-            }
-            *res = sum;
-        }
+        let data: Vec<T> = (0..m).map(|i| self.row(i).inner_product(v)).collect();
 
         Tensor {
             shape: [m],
-            data: result,
+            data,
         }
     }
 

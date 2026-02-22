@@ -56,6 +56,26 @@ impl<T: Numeric, const RANK: usize> Tensor<T, RANK> {
         offset
     }
 
+    // -- Operations --
+
+    /// Inner product of two tensors with the same shape.
+    ///
+    /// Computes the sum of element-wise products. For vectors this is the
+    /// standard dot product; for matrices it is the Frobenius inner product.
+    pub fn inner_product(&self, other: &Self) -> T {
+        assert_eq!(self.shape, other.shape, "inner product requires matching shapes");
+        self.data
+            .iter()
+            .zip(other.data.iter())
+            .map(|(&a, &b)| a * b)
+            .sum()
+    }
+
+    /// Alias for [`inner_product`](Self::inner_product).
+    pub fn dot(&self, other: &Self) -> T {
+        self.inner_product(other)
+    }
+
     // -- Constructors --
 
     /// Tensor filled with zeros.
@@ -141,6 +161,28 @@ impl<T: Numeric, const RANK: usize> IndexMut<[usize; RANK]> for Tensor<T, RANK> 
     fn index_mut(&mut self, idx: [usize; RANK]) -> &mut T {
         let i = self.flat_index(&idx);
         &mut self.data[i]
+    }
+}
+
+// -- Outer product (vector x vector → matrix) --
+
+impl<T: Numeric> Tensor<T, 1> {
+    /// Outer product of two vectors, producing a matrix.
+    ///
+    /// `(a ⊗ b)[i,j] = a[i] * b[j]`
+    pub fn outer_product(&self, other: &Self) -> Tensor<T, 2> {
+        let m = self.shape[0];
+        let n = other.shape[0];
+        let mut data = Vec::with_capacity(m * n);
+        for &ai in &self.data {
+            for &bj in &other.data {
+                data.push(ai * bj);
+            }
+        }
+        Tensor {
+            shape: [m, n],
+            data,
+        }
     }
 }
 
@@ -260,5 +302,54 @@ mod tests {
     fn display_rank1() {
         let v = Tensor::from_shape_vec([3], vec![1, 2, 3]);
         assert_eq!(format!("{v}"), "[1, 2, 3]");
+    }
+
+    #[test]
+    fn inner_product_vector() {
+        let a = Tensor::from_shape_vec([3], vec![1.0, 2.0, 3.0]);
+        let b = Tensor::from_shape_vec([3], vec![4.0, 5.0, 6.0]);
+        assert_eq!(a.inner_product(&b), 32.0);
+    }
+
+    #[test]
+    fn inner_product_matrix() {
+        let a = Tensor::from_shape_vec([2, 2], vec![1.0, 2.0, 3.0, 4.0]);
+        let b = Tensor::from_shape_vec([2, 2], vec![5.0, 6.0, 7.0, 8.0]);
+        assert_eq!(a.inner_product(&b), 70.0);
+    }
+
+    #[test]
+    fn outer_product_vectors() {
+        let a = Tensor::from_shape_vec([3], vec![1.0, 2.0, 3.0]);
+        let b = Tensor::from_shape_vec([2], vec![4.0, 5.0]);
+        let m = a.outer_product(&b);
+        assert_eq!(m.shape(), &[3, 2]);
+        assert_eq!(m.as_slice(), &[4.0, 5.0, 8.0, 10.0, 12.0, 15.0]);
+    }
+
+    #[test]
+    fn outer_product_square() {
+        let a = Tensor::from_shape_vec([2], vec![1.0, 2.0]);
+        let b = Tensor::from_shape_vec([2], vec![3.0, 4.0]);
+        let m = a.outer_product(&b);
+        assert_eq!(m.shape(), &[2, 2]);
+        // [1*3, 1*4, 2*3, 2*4]
+        assert_eq!(m.as_slice(), &[3.0, 4.0, 6.0, 8.0]);
+    }
+
+    #[test]
+    fn dot_vector() {
+        let a = Tensor::from_shape_vec([3], vec![1.0, 2.0, 3.0]);
+        let b = Tensor::from_shape_vec([3], vec![4.0, 5.0, 6.0]);
+        assert_eq!(a.dot(&b), 32.0);
+    }
+
+    #[test]
+    fn dot_matrix() {
+        // Frobenius inner product: sum of element-wise products
+        let a = Tensor::from_shape_vec([2, 2], vec![1.0, 2.0, 3.0, 4.0]);
+        let b = Tensor::from_shape_vec([2, 2], vec![5.0, 6.0, 7.0, 8.0]);
+        // 1*5 + 2*6 + 3*7 + 4*8 = 5 + 12 + 21 + 32 = 70
+        assert_eq!(a.dot(&b), 70.0);
     }
 }
