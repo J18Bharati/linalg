@@ -41,6 +41,20 @@ impl<T: Numeric> Tensor<T, 2> {
         }
     }
 
+    /// Build a matrix by calling `f(row, col)` for each element.
+    pub fn from_fn(rows: usize, cols: usize, f: impl Fn(usize, usize) -> T) -> Self {
+        let mut data = Vec::with_capacity(rows * cols);
+        for r in 0..rows {
+            for c in 0..cols {
+                data.push(f(r, c));
+            }
+        }
+        Self {
+            shape: [rows, cols],
+            data,
+        }
+    }
+
     /// Identity matrix of size `n x n`.
     pub fn identity(n: usize) -> Self {
         let mut data = vec![T::zero(); n * n];

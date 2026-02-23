@@ -76,6 +76,28 @@ impl<T: Numeric, const RANK: usize> Tensor<T, RANK> {
         self.inner_product(other)
     }
 
+    /// Apply a function element-wise, returning a new tensor.
+    pub fn map(&self, f: impl Fn(T) -> T) -> Self {
+        Self {
+            shape: self.shape,
+            data: self.data.iter().map(|&v| f(v)).collect(),
+        }
+    }
+
+    /// Sum of all elements.
+    pub fn sum(&self) -> T {
+        self.data.iter().copied().sum()
+    }
+
+    /// Maximum element. Panics if tensor is empty.
+    pub fn max(&self) -> T {
+        self.data
+            .iter()
+            .copied()
+            .reduce(|a, b| if b > a { b } else { a })
+            .expect("max on empty tensor")
+    }
+
     // -- Constructors --
 
     /// Tensor filled with zeros.

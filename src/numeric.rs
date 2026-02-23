@@ -20,6 +20,8 @@ pub trait Numeric:
     fn zero() -> Self;
     fn one() -> Self;
     fn sqrt(self) -> Self;
+    fn exp(self) -> Self;
+    fn ln(self) -> Self;
 }
 
 macro_rules! impl_numeric_float {
@@ -32,6 +34,10 @@ macro_rules! impl_numeric_float {
                 fn one() -> Self { 1.0 }
                 #[inline]
                 fn sqrt(self) -> Self { <$t>::sqrt(self) }
+                #[inline]
+                fn exp(self) -> Self { <$t>::exp(self) }
+                #[inline]
+                fn ln(self) -> Self { <$t>::ln(self) }
             }
         )*
     };
@@ -47,6 +53,10 @@ macro_rules! impl_numeric_int {
                 fn one() -> Self { 1 }
                 #[inline]
                 fn sqrt(self) -> Self { (self as f64).sqrt() as Self }
+                #[inline]
+                fn exp(self) -> Self { (self as f64).exp() as Self }
+                #[inline]
+                fn ln(self) -> Self { (self as f64).ln() as Self }
             }
         )*
     };
